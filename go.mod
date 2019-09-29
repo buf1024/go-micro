@@ -27,6 +27,7 @@ require (
 	github.com/micro/go-micro v1.10.1-0.20190914150736-364c5a486180
 	github.com/micro/mdns v0.3.0
 	github.com/mitchellh/hashstructure v1.0.0
+	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
 	github.com/nats-io/nats.go v1.8.1
 	github.com/nlopes/slack v0.6.0
 	github.com/pkg/errors v0.8.1
