@@ -18,6 +18,7 @@ type Client interface {
 	NewRequest(service, endpoint string, req interface{}, reqOpts ...RequestOption) Request
 	Call(ctx context.Context, req Request, rsp interface{}, opts ...CallOption) error
 	Stream(ctx context.Context, req Request, opts ...CallOption) (Stream, error)
+	// 通过Broker发布异步消息
 	Publish(ctx context.Context, msg Message, opts ...PublishOption) error
 	String() string
 }

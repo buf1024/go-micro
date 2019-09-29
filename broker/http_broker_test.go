@@ -1,6 +1,7 @@
 package broker
 
 import (
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -156,7 +157,7 @@ func pub(be *testing.B, c int) {
 
 func TestBroker(t *testing.T) {
 	m := newTestRegistry()
-	b := NewBroker(Registry(m))
+	b := NewBroker(Registry(m), Addrs("localhost:9999"))
 
 	if err := b.Init(); err != nil {
 		t.Fatalf("Unexpected init error: %v", err)
@@ -181,6 +182,7 @@ func TestBroker(t *testing.T) {
 		if string(m.Body) != string(msg.Body) {
 			t.Fatalf("Unexpected msg %s, expected %s", string(m.Body), string(msg.Body))
 		}
+		fmt.Printf("subscribe recv: %+v", p)
 
 		close(done)
 		return nil

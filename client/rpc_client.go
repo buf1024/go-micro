@@ -22,9 +22,9 @@ import (
 
 type rpcClient struct {
 	once sync.Once
-	opts Options
+	opts Options   // Client属性
 	pool pool.Pool
-	seq  uint64
+	seq  uint64 // 请求序列号
 }
 
 func newRpcClient(opt ...Option) Client {
@@ -77,6 +77,7 @@ func (r *rpcClient) call(ctx context.Context, node *registry.Node, req Request, 
 		}
 	}
 
+	// 调用协议
 	// set timeout in nanoseconds
 	msg.Header["Timeout"] = fmt.Sprintf("%d", opts.RequestTimeout)
 	// set the content type for the request
@@ -368,6 +369,7 @@ func (r *rpcClient) Call(ctx context.Context, request Request, response interfac
 		opt(&callOpts)
 	}
 
+	// 根据selector策略选择node
 	next, err := r.next(request, callOpts)
 	if err != nil {
 		return err
@@ -424,6 +426,7 @@ func (r *rpcClient) Call(ctx context.Context, request Request, response interfac
 		}
 
 		// make the call
+		// rcp 调用
 		err = rcall(ctx, node, request, response, callOpts)
 		r.opts.Selector.Mark(service, node, err)
 		return err
@@ -432,6 +435,7 @@ func (r *rpcClient) Call(ctx context.Context, request Request, response interfac
 	ch := make(chan error, callOpts.Retries+1)
 	var gerr error
 
+	// Retries次call
 	for i := 0; i <= callOpts.Retries; i++ {
 		go func(i int) {
 			ch <- call(i)
@@ -446,6 +450,7 @@ func (r *rpcClient) Call(ctx context.Context, request Request, response interfac
 				return nil
 			}
 
+			// 重试判断
 			retry, rerr := callOpts.Retry(ctx, request, i, err)
 			if rerr != nil {
 				return rerr

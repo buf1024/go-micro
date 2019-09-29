@@ -9,10 +9,10 @@ import (
 )
 
 type Options struct {
-	Addrs     []string
-	Secure    bool
-	Codec     codec.Marshaler
-	TLSConfig *tls.Config
+	Addrs     []string // broker的地址
+	Secure    bool // 是否安全连接
+	Codec     codec.Marshaler // 序列化的codec
+	TLSConfig *tls.Config // 安全连接的配置
 	// Other options for implementations of the interface
 	// can be stored in a context
 	Context context.Context

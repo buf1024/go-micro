@@ -69,6 +69,7 @@ func (p *pool) Get(addr string, opts ...transport.DialOption) (Conn, error) {
 		p.conns[addr] = conns
 
 		// if conn is old kill it and move on
+		// ? todo 如果超时内活跃，就不删除释放好点
 		if d := time.Since(conn.Created()); d > p.ttl {
 			conn.Client.Close()
 			continue
@@ -107,6 +108,12 @@ func (p *pool) Release(conn Conn, err error) error {
 		p.Unlock()
 		return conn.(*poolConn).Client.Close()
 	}
+	// ? todo 如果超时内活跃，就不删除释放好点，应该在发送后接受内使用
+	//if pconn, ok := conn.(*poolConn); ok {
+	//	pconn.created = time.Now()
+	//}
+
+	conn.Created()
 	p.conns[conn.Remote()] = append(conns, conn.(*poolConn))
 	p.Unlock()
 

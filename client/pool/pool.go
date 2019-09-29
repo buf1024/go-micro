@@ -7,16 +7,18 @@ import (
 	"github.com/micro/go-micro/transport"
 )
 
+// 连接池
 // Pool is an interface for connection pooling
 type Pool interface {
 	// Close the pool
 	Close() error
-	// Get a connection
+	// Get a connection 获取连接，获取后删除
 	Get(addr string, opts ...transport.DialOption) (Conn, error)
-	// Releaes the connection
+	// Release the connection 释放连接，放回连接池中
 	Release(c Conn, status error) error
 }
 
+// 封装连接
 type Conn interface {
 	// unique id of connection
 	Id() string

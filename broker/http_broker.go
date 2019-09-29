@@ -29,34 +29,35 @@ import (
 
 // HTTP Broker is a point to point async broker
 type httpBroker struct {
-	id      string
-	address string
-	opts    Options
+	id      string // broker id
+	address string // broker 第一个地址
+	opts    Options // broker选项
 
-	mux *http.ServeMux
+	mux *http.ServeMux // serve mux
 
-	c *http.Client
-	r registry.Registry
+	c *http.Client // http client 使用http2 transport
+	r registry.Registry // 注册中心
 
 	sync.RWMutex
-	subscribers map[string][]*httpSubscriber
-	running     bool
-	exit        chan chan error
+	subscribers map[string][]*httpSubscriber // http 订阅列表
+	running     bool // 启动标志
+	exit        chan chan error // exit chan
 
 	// offline message inbox
 	mtx   sync.RWMutex
-	inbox map[string][][]byte
+	inbox map[string][][]byte // Publish/Subscribe一个topic时，缓存的消息
 }
 
 type httpSubscriber struct {
 	opts  SubscribeOptions
-	id    string
-	topic string
-	fn    Handler
-	svc   *registry.Service
-	hb    *httpBroker
+	id    string // topic id
+	topic string // topic
+	fn    Handler // 消息出来
+	svc   *registry.Service // 注册的服务
+	hb    *httpBroker // broker
 }
 
+// http 处理的event
 type httpEvent struct {
 	m *Message
 	t string
@@ -76,7 +77,7 @@ func init() {
 func newTransport(config *tls.Config) *http.Transport {
 	if config == nil {
 		config = &tls.Config{
-			InsecureSkipVerify: true,
+			InsecureSkipVerify: true, // 默认https
 		}
 	}
 
@@ -116,7 +117,7 @@ func newHttpBroker(opts ...Option) Broker {
 	// set address
 	addr := ":0"
 	if len(options.Addrs) > 0 && len(options.Addrs[0]) > 0 {
-		addr = options.Addrs[0]
+		addr = options.Addrs[0] // 只取第一个？
 	}
 
 	// get registry
@@ -142,6 +143,7 @@ func newHttpBroker(opts ...Option) Broker {
 
 	// get optional handlers
 	if h.opts.Context != nil {
+		// 额外的handler添加到broker上面
 		handlers, ok := h.opts.Context.Value("http_handlers").(map[string]http.Handler)
 		if ok {
 			for pattern, handler := range handlers {
@@ -285,6 +287,7 @@ func (h *httpBroker) run(l net.Listener) {
 	}
 }
 
+// 处理具体的http请求，并转发到正确的handler
 func (h *httpBroker) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if req.Method != "POST" {
 		err := merr.BadRequest("go.micro.broker", "Method not allowed")
@@ -341,6 +344,7 @@ func (h *httpBroker) Address() string {
 	return h.address
 }
 
+// Connect开始真正的监听
 func (h *httpBroker) Connect() error {
 	h.RLock()
 	if h.running {
@@ -498,6 +502,7 @@ func (h *httpBroker) Options() Options {
 	return h.opts
 }
 
+// Publish 就是作为客户端post数据
 func (h *httpBroker) Publish(topic string, msg *Message, opts ...PublishOption) error {
 	// create the message first
 	m := &Message{
@@ -594,7 +599,7 @@ func (h *httpBroker) Publish(topic string, msg *Message, opts ...PublishOption) 
 	go func() {
 		// get a third of the backlog
 		messages := h.getMessage(topic, 8)
-		delay := (len(messages) > 1)
+		delay := len(messages) > 1
 
 		// publish all the messages
 		for _, msg := range messages {
@@ -610,7 +615,7 @@ func (h *httpBroker) Publish(topic string, msg *Message, opts ...PublishOption) 
 
 	return nil
 }
-
+// Subscribe 就是起个http服务器处理
 func (h *httpBroker) Subscribe(topic string, handler Handler, opts ...SubscribeOption) (Subscriber, error) {
 	var err error
 	var host, port string
@@ -651,6 +656,7 @@ func (h *httpBroker) Subscribe(topic string, handler Handler, opts ...SubscribeO
 		version = broadcastVersion
 	}
 
+	// 注册中心注册的名称
 	service := &registry.Service{
 		Name:    "topic:" + topic,
 		Version: version,

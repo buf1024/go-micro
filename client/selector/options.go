@@ -7,7 +7,9 @@ import (
 )
 
 type Options struct {
+	// 用以获取服务
 	Registry registry.Registry
+	// 选择的策略，返回Next函数
 	Strategy Strategy
 
 	// Other options for implementations of the interface
@@ -16,7 +18,9 @@ type Options struct {
 }
 
 type SelectOptions struct {
+	// 过滤服务
 	Filters  []Filter
+	// 策略
 	Strategy Strategy
 
 	// Other options for implementations of the interface

@@ -11,7 +11,7 @@ import (
 // Implements the streamer interface
 type rpcStream struct {
 	sync.RWMutex
-	id       string
+	id       string // 序列号
 	closed   chan bool
 	err      error
 	request  Request

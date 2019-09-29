@@ -5,6 +5,7 @@ import (
 	"io"
 )
 
+// 消息类型：请求/应答/事件
 const (
 	Error MessageType = iota
 	Request

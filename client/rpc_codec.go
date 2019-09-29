@@ -125,6 +125,7 @@ func setHeaders(m *codec.Message, stream string) {
 		m.Header["X-"+hdr] = v
 	}
 
+	// 设置头部
 	set("Micro-Id", m.Id)
 	set("Micro-Service", m.Target)
 	set("Micro-Method", m.Method)

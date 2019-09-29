@@ -11,6 +11,7 @@ type Service struct {
 type Node struct {
 	Id       string            `json:"id"`
 	Address  string            `json:"address"`
+	// secure,
 	Metadata map[string]string `json:"metadata"`
 }
 

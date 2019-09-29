@@ -6,6 +6,7 @@ import (
 	"github.com/micro/go-micro/registry"
 )
 
+// 设计思路上，返回一个函数好于一个具体的值
 // Selector builds on the registry as a mechanism to pick nodes
 // and mark their status. This allows host pools and other things
 // to be built using various algorithms.

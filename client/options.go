@@ -16,18 +16,18 @@ type Options struct {
 	ContentType string
 
 	// Plugged interfaces
-	Broker    broker.Broker
-	Codecs    map[string]codec.NewCodec
-	Registry  registry.Registry
-	Selector  selector.Selector
-	Transport transport.Transport
+	Broker    broker.Broker  // 异步消息
+	Codecs    map[string]codec.NewCodec // 消息编码
+	Registry  registry.Registry // 注册中心
+	Selector  selector.Selector // 负载服务选择
+	Transport transport.Transport // 传输层
 
 	// Router sets the router
 	Router Router
 
 	// Connection Pool
-	PoolSize int
-	PoolTTL  time.Duration
+	PoolSize int            // 连接池大小
+	PoolTTL  time.Duration  // 存活时间
 
 	// Middleware for client
 	Wrappers []Wrapper
@@ -66,6 +66,7 @@ type CallOptions struct {
 
 type PublishOptions struct {
 	// Exchange is the routing exchange for the message
+	// MICRO_PROXY 环境变量，topic变成这上面的，原因？
 	Exchange string
 	// Other options for implementations of the interface
 	// can be stored in a context

@@ -17,8 +17,8 @@ type Options struct {
 	Registry     registry.Registry
 	Transport    transport.Transport
 	Metadata     map[string]string
-	Name         string
-	Address      string
+	Name         string // server 名
+	Address      string // 监听地址
 	Advertise    string
 	Id           string
 	Version      string

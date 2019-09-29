@@ -75,6 +75,7 @@ func extractEndpoint(method reflect.Method) *registry.Endpoint {
 	var stream bool
 	mt := method.Type
 
+	// 3个和4个参数？
 	switch mt.NumIn() {
 	case 3:
 		reqType = mt.In(1)

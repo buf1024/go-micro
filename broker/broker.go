@@ -18,6 +18,7 @@ type Broker interface {
 // message and optional Ack method to acknowledge receipt of the message.
 type Handler func(Event) error
 
+// 消息
 type Message struct {
 	Header map[string]string
 	Body   []byte
