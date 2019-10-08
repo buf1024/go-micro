@@ -86,17 +86,28 @@ func newNetwork(opts ...Option) Network {
 		tun.WithTunnel(options.Tunnel),
 	)
 
+	// set the address to a hashed address
+	hasher := fnv.New64()
+	hasher.Write([]byte(options.Address + options.Id))
+	address := fmt.Sprintf("%d", hasher.Sum64())
+
 	// set the address to advertise
-	address := options.Address
+	var advertise string
+	var peerAddress string
+
 	if len(options.Advertise) > 0 {
-		address = options.Advertise
+		advertise = options.Advertise
+		peerAddress = options.Advertise
+	} else {
+		advertise = options.Address
+		peerAddress = address
 	}
 
 	// server is network server
 	server := server.NewServer(
 		server.Id(options.Id),
-		server.Address(options.Id),
-		server.Advertise(address),
+		server.Address(peerAddress),
+		server.Advertise(advertise),
 		server.Name(options.Name),
 		server.Transport(tunTransport),
 	)
@@ -114,7 +125,7 @@ func newNetwork(opts ...Option) Network {
 	network := &network{
 		node: &node{
 			id:      options.Id,
-			address: address,
+			address: peerAddress,
 			peers:   make(map[string]*node),
 		},
 		options:   options,
@@ -202,6 +213,9 @@ func (n *network) handleNetConn(sess tunnel.Session, msg chan *transport.Message
 		m := new(transport.Message)
 		if err := sess.Recv(m); err != nil {
 			log.Debugf("Network tunnel [%s] receive error: %v", NetworkChannel, err)
+			if sessErr := sess.Close(); sessErr != nil {
+				log.Debugf("Network tunnel [%s] closing connection error: %v", sessErr)
+			}
 			return
 		}
 
@@ -219,9 +233,7 @@ func (n *network) acceptNetConn(l tunnel.Listener, recv chan *transport.Message)
 		// accept a connection
 		conn, err := l.Accept()
 		if err != nil {
-			// TODO: handle this
 			log.Debugf("Network tunnel [%s] accept error: %v", NetworkChannel, err)
-			return
 		}
 
 		select {
@@ -675,7 +687,7 @@ func (n *network) advertise(client transport.Client, advertChan <-chan *router.A
 				route := &pbRtr.Route{
 					Service: event.Route.Service,
 					Address: address,
-					Gateway: n.node.id,
+					Gateway: n.node.Address(),
 					Network: event.Route.Network,
 					Router:  event.Route.Router,
 					Link:    DefaultLink,
@@ -719,6 +731,11 @@ func (n *network) Connect() error {
 		log.Debugf("Network failed to resolve nodes: %v", err)
 	}
 
+	// initialize the tunnel to resolved nodes
+	n.tunnel.Init(
+		tunnel.Nodes(nodes...),
+	)
+
 	// connect network tunnel
 	if err := n.tunnel.Connect(); err != nil {
 		n.Unlock()
@@ -728,14 +745,8 @@ func (n *network) Connect() error {
 	// set our internal node address
 	// if advertise address is not set
 	if len(n.options.Advertise) == 0 {
-		n.node.address = n.tunnel.Address()
 		n.server.Init(server.Advertise(n.tunnel.Address()))
 	}
-
-	// initialize the tunnel to resolved nodes
-	n.tunnel.Init(
-		tunnel.Nodes(nodes...),
-	)
 
 	// dial into ControlChannel to send route adverts
 	ctrlClient, err := n.tunnel.Dial(ControlChannel, tunnel.DialMulticast())

@@ -23,11 +23,12 @@ import (
 	"github.com/micro/go-micro/broker/http"
 	"github.com/micro/go-micro/broker/memory"
 	"github.com/micro/go-micro/broker/nats"
+	brokerSrv "github.com/micro/go-micro/broker/service"
 
 	// registries
 	"github.com/micro/go-micro/registry"
 	"github.com/micro/go-micro/registry/consul"
-	"github.com/micro/go-micro/registry/gossip"
+	"github.com/micro/go-micro/registry/etcd"
 	"github.com/micro/go-micro/registry/mdns"
 	rmem "github.com/micro/go-micro/registry/memory"
 	regSrv "github.com/micro/go-micro/registry/service"
@@ -154,7 +155,7 @@ var (
 		cli.StringFlag{
 			Name:   "registry",
 			EnvVar: "MICRO_REGISTRY",
-			Usage:  "Registry for discovery. consul, mdns",
+			Usage:  "Registry for discovery. consul, etcd, mdns",
 		},
 		cli.StringFlag{
 			Name:   "registry_address",
@@ -179,9 +180,11 @@ var (
 	}
 
 	DefaultBrokers = map[string]func(...broker.Option) broker.Broker{
-		"http":   http.NewBroker,
-		"memory": memory.NewBroker,
-		"nats":   nats.NewBroker,
+		"go.micro.broker": brokerSrv.NewBroker,
+		"service":         brokerSrv.NewBroker,
+		"http":            http.NewBroker,
+		"memory":          memory.NewBroker,
+		"nats":            nats.NewBroker,
 	}
 
 	DefaultClients = map[string]func(...client.Option) client.Client{
@@ -194,7 +197,7 @@ var (
 		"go.micro.registry": regSrv.NewRegistry,
 		"service":           regSrv.NewRegistry,
 		"consul":            consul.NewRegistry,
-		"gossip":            gossip.NewRegistry,
+		"etcd":              etcd.NewRegistry,
 		"mdns":              mdns.NewRegistry,
 		"memory":            rmem.NewRegistry,
 	}
