@@ -11,6 +11,7 @@ import (
 	"github.com/micro/go-micro/client"
 	rtr "github.com/micro/go-micro/client/selector/router"
 	pbNet "github.com/micro/go-micro/network/proto"
+	"github.com/micro/go-micro/network/resolver/dns"
 	"github.com/micro/go-micro/proxy"
 	"github.com/micro/go-micro/router"
 	pbRtr "github.com/micro/go-micro/router/proto"
@@ -28,6 +29,8 @@ var (
 	ControlChannel = "control"
 	// DefaultLink is default network link
 	DefaultLink = "network"
+	// MaxConnections is the max number of network client connections
+	MaxConnections = 3
 )
 
 var (
@@ -73,7 +76,6 @@ func newNetwork(opts ...Option) Network {
 	// init tunnel address to the network bind address
 	options.Tunnel.Init(
 		tunnel.Address(options.Address),
-		tunnel.Nodes(options.Peers...),
 	)
 
 	// init router Id to the network id
@@ -169,15 +171,34 @@ func (n *network) resolveNodes() ([]string, error) {
 
 	// collect network node addresses
 	var nodes []string
+
+	i := 0
 	for _, record := range records {
 		nodes = append(nodes, record.Address)
 		nodeMap[record.Address] = true
+		i++
+		// break once MaxConnection nodes has been reached
+		if i == MaxConnections {
+			break
+		}
 	}
+
+	// use the dns resolver to expand peers
+	dns := &dns.Resolver{}
 
 	// append seed nodes if we have them
 	for _, node := range n.options.Peers {
-		if _, ok := nodeMap[node]; !ok {
-			nodes = append(nodes, node)
+		// resolve anything that looks like a host name
+		records, err := dns.Resolve(node)
+		if err != nil {
+			continue
+		}
+
+		// add to the node map
+		for _, record := range records {
+			if _, ok := nodeMap[record.Address]; !ok {
+				nodes = append(nodes, record.Address)
+			}
 		}
 	}
 
@@ -485,7 +506,6 @@ func (n *network) handleCtrlConn(sess tunnel.Session, msg chan *transport.Messag
 	for {
 		m := new(transport.Message)
 		if err := sess.Recv(m); err != nil {
-			// TODO: should we bail here?
 			log.Debugf("Network tunnel advert receive error: %v", err)
 			return
 		}
@@ -504,9 +524,7 @@ func (n *network) acceptCtrlConn(l tunnel.Listener, recv chan *transport.Message
 		// accept a connection
 		conn, err := l.Accept()
 		if err != nil {
-			// TODO: handle this
 			log.Debugf("Network tunnel [%s] accept error: %v", ControlChannel, err)
-			return
 		}
 
 		select {
