@@ -13,10 +13,12 @@ type Options struct {
 	Addrs []string
 	// Codec is the codec interface to use where headers are not supported
 	// by the transport and the entire payload must be encoded
+	// 此字段目前没有使用
 	Codec codec.Marshaler
 	// Secure tells the transport to secure the connection.
 	// In the case TLSConfig is not specified best effort self-signed
 	// certs should be used
+	// 用户客户端的tls配置/标识
 	Secure bool
 	// TLSConfig to secure the connection. The assumption is that this
 	// is mTLS keypair
@@ -31,8 +33,10 @@ type Options struct {
 type DialOptions struct {
 	// Tells the transport this is a streaming connection with
 	// multiple calls to send/recv and that send may not even be called
+	// 流标识
 	Stream bool
 	// Timeout for dialing
+	// 超时时间，http默认5s
 	Timeout time.Duration
 
 	// TODO: add tls options when dialling

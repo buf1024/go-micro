@@ -7,6 +7,7 @@ require (
 	github.com/beevik/ntp v0.2.0
 	github.com/bitly/go-simplejson v0.5.0
 	github.com/bwmarrin/discordgo v0.19.0
+	github.com/coreos/etcd v3.3.15+incompatible
 	github.com/forestgiant/sliceutil v0.0.0-20160425183142-94783f95db6c
 	github.com/fsnotify/fsnotify v1.4.7
 	github.com/fsouza/go-dockerclient v1.4.4
@@ -18,7 +19,6 @@ require (
 	github.com/gorilla/websocket v1.4.1
 	github.com/hashicorp/consul/api v1.2.0
 	github.com/hashicorp/hcl v1.0.0
-	github.com/hashicorp/memberlist v0.1.5
 	github.com/imdario/mergo v0.3.7
 	github.com/joncalhoun/qson v0.0.0-20170526102502-8a9cab3a62b1
 	github.com/json-iterator/go v1.1.7

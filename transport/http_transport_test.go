@@ -80,7 +80,9 @@ func TestHTTPTransportCommunication(t *testing.T) {
 		}
 	}()
 
-	c, err := tr.Dial(l.Addr())
+	c, err := tr.Dial(l.Addr(), func(options *DialOptions) {
+		options.Stream = true
+	})
 	if err != nil {
 		t.Errorf("Unexpected dial err: %v", err)
 	}
@@ -96,9 +98,15 @@ func TestHTTPTransportCommunication(t *testing.T) {
 	if err := c.Send(&m); err != nil {
 		t.Errorf("Unexpected send err: %v", err)
 	}
+	if err := c.Send(&m); err != nil {
+		t.Errorf("Unexpected send err: %v", err)
+	}
 
 	var rm Message
 
+	if err := c.Recv(&rm); err != nil {
+		t.Errorf("Unexpected recv err: %v", err)
+	}
 	if err := c.Recv(&rm); err != nil {
 		t.Errorf("Unexpected recv err: %v", err)
 	}

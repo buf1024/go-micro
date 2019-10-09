@@ -22,40 +22,40 @@ import (
 )
 
 type httpTransport struct {
-	opts Options
+	opts Options // transport选项
 }
 
 type httpTransportClient struct {
-	ht       *httpTransport
-	addr     string
-	conn     net.Conn
-	dialOpts DialOptions
+	ht       *httpTransport //transport
+	addr     string // 连接的地址
+	conn     net.Conn // 连接的conn，如果是存在代理,则是重写后的conn，从代理写，从远端读
+	dialOpts DialOptions // 连接选项
 	once     sync.Once
 
-	sync.RWMutex
+	sync.RWMutex // 同步以下
 
 	// request must be stored for response processing
-	r    chan *http.Request
-	bl   []*http.Request
-	buff *bufio.Reader
+	r    chan *http.Request // 单前请求chan，初始化是缓存为1，连续请求建阻塞，追加到bl请求队列
+	bl   []*http.Request // 请求队列
+	buff *bufio.Reader // conn的reader读端
 
 	// local/remote ip
-	local  string
-	remote string
+	local  string // 本地地址
+	remote string // 远端地址
 }
 
 type httpTransportSocket struct {
 	ht *httpTransport
-	w  http.ResponseWriter
-	r  *http.Request
-	rw *bufio.ReadWriter
+	w  http.ResponseWriter // http 的writer
+	r  *http.Request // http 的request
+	rw *bufio.ReadWriter // onn的 bufrw
 
 	mtx sync.RWMutex
 
 	// the hijacked when using http 1
-	conn net.Conn
+	conn net.Conn // hijacked后的Conn
 	// for the first request
-	ch chan *http.Request
+	ch chan *http.Request // 第一个请求
 
 	// h2 things
 	buf *bufio.Reader
@@ -69,7 +69,7 @@ type httpTransportSocket struct {
 
 type httpTransportListener struct {
 	ht       *httpTransport
-	listener net.Listener
+	listener net.Listener // 监听器
 }
 
 func (h *httpTransportClient) Local() string {
@@ -102,6 +102,10 @@ func (h *httpTransportClient) Send(m *Message) error {
 		Host:          h.addr,
 	}
 
+	// h.r 初始化是缓存为1，连续追加到bl请求队列，似乎bl存在没意义，后面stream方式，没有连接起来
+	// QUES: 此处如果是Stream的方式，在RECV并不能关联到原来的Request,
+	// 如果修改为go routine放入h.r，貌似又不合适，Stream方式如果是服务端推送，则不可。
+	// 虽然不影响功能，但此处代码貌似不是很完整
 	h.Lock()
 	h.bl = append(h.bl, req)
 	select {

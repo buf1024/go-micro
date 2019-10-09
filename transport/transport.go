@@ -8,6 +8,9 @@ import (
 // Transport is an interface which is used for communication between
 // services. It uses connection based socket send/recv semantics and
 // has various implementations; http, grpc, quic.
+// 传输层提供的接口，重要的是两个
+// Dial连接服务端
+// Listen服务端监听
 type Transport interface {
 	Init(...Option) error
 	Options() Options
@@ -16,11 +19,16 @@ type Transport interface {
 	String() string
 }
 
+// 交互协议
 type Message struct {
 	Header map[string]string
 	Body   []byte
 }
 
+// Socket提供接口
+// 重要的是两个
+// Recv用于接受协议信息
+// Send用于发送协议信息
 type Socket interface {
 	Recv(*Message) error
 	Send(*Message) error
