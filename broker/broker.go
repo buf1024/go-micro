@@ -6,9 +6,12 @@ type Broker interface {
 	Init(...Option) error
 	Options() Options
 	Address() string
+	// 开始真正的监听
 	Connect() error
 	Disconnect() error
+	// 发布可以理解为客户端发送请求给服务端
 	Publish(topic string, m *Message, opts ...PublishOption) error
+	// 订阅可理解为服务端监听接受信息
 	Subscribe(topic string, h Handler, opts ...SubscribeOption) (Subscriber, error)
 	String() string
 }
@@ -18,7 +21,7 @@ type Broker interface {
 // message and optional Ack method to acknowledge receipt of the message.
 type Handler func(Event) error
 
-// 消息
+// 消息协议
 type Message struct {
 	Header map[string]string
 	Body   []byte

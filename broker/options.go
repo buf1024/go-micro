@@ -9,7 +9,7 @@ import (
 )
 
 type Options struct {
-	Addrs     []string // broker的地址
+	Addrs     []string // broker的地址，只取第一个
 	Secure    bool // 是否安全连接
 	Codec     codec.Marshaler // 序列化的codec
 	TLSConfig *tls.Config // 安全连接的配置

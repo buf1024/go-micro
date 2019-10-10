@@ -48,17 +48,17 @@ type httpTransportSocket struct {
 	ht *httpTransport
 	w  http.ResponseWriter // http 的writer
 	r  *http.Request // http 的request
-	rw *bufio.ReadWriter // onn的 bufrw
+	rw *bufio.ReadWriter // 针对http 1.1 conn的 bufrw
 
 	mtx sync.RWMutex
 
 	// the hijacked when using http 1
-	conn net.Conn // hijacked后的Conn
+	conn net.Conn // 针对http 1.1 hijacked后的Conn
 	// for the first request
-	ch chan *http.Request // 第一个请求
+	ch chan *http.Request // http请求chan
 
 	// h2 things
-	buf *bufio.Reader
+	buf *bufio.Reader // body的reader
 	// indicate if socket is closed
 	closed chan bool
 

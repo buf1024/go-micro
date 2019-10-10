@@ -45,7 +45,7 @@ type httpBroker struct {
 
 	// offline message inbox
 	mtx   sync.RWMutex
-	inbox map[string][][]byte // Publish/Subscribe一个topic时，缓存的消息
+	inbox map[string][][]byte // Subscribe一个topic时，缓存的消息
 }
 
 type httpSubscriber struct {
@@ -131,7 +131,7 @@ func newHttpBroker(opts ...Option) Broker {
 		address:     addr,
 		opts:        options,
 		r:           reg,
-		c:           &http.Client{Transport: newTransport(options.TLSConfig)},
+		c:           &http.Client{Transport: newTransport(options.TLSConfig)}, // http2 transport
 		subscribers: make(map[string][]*httpSubscriber),
 		exit:        make(chan chan error),
 		mux:         http.NewServeMux(),
@@ -532,6 +532,7 @@ func (h *httpBroker) Publish(topic string, msg *Message, opts ...PublishOption) 
 
 	// now attempt to get the service
 	h.RLock()
+	// 获取订阅topic的node
 	s, err := h.r.GetService("topic:" + topic)
 	if err != nil {
 		h.RUnlock()
@@ -557,6 +558,7 @@ func (h *httpBroker) Publish(topic string, msg *Message, opts ...PublishOption) 
 			return err
 		}
 
+		// 只负责发送，不管回应，只有在发送失败时才重复发送
 		// discard response body
 		io.Copy(ioutil.Discard, r.Body)
 		r.Body.Close()
@@ -611,7 +613,7 @@ func (h *httpBroker) Publish(topic string, msg *Message, opts ...PublishOption) 
 			// serialize here
 			srv(s, msg)
 
-			// sending a backlog of messages
+			// sending a backlog of messages 为何需要delay？
 			if delay {
 				time.Sleep(time.Millisecond * 100)
 			}
