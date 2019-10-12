@@ -7,11 +7,13 @@ import (
 // HandlerFunc represents a single method of a handler. It's used primarily
 // for the wrappers. What's handed to the actual method is the concrete
 // request and response types.
+// 请求处理函数
 type HandlerFunc func(ctx context.Context, req Request, rsp interface{}) error
 
 // SubscriberFunc represents a single method of a subscriber. It's used primarily
 // for the wrappers. What's handed to the actual method is the concrete
 // publication message.
+// 订阅处理函数
 type SubscriberFunc func(ctx context.Context, msg Message) error
 
 // HandlerWrapper wraps the HandlerFunc and returns the equivalent

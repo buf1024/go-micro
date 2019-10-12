@@ -29,8 +29,8 @@ type rpcServer struct {
 
 	sync.RWMutex
 	opts        Options
-	handlers    map[string]Handler
-	subscribers map[*subscriber][]broker.Subscriber
+	handlers    map[string]Handler // handler列表
+	subscribers map[*subscriber][]broker.Subscriber // subscribe列表
 	// marks the serve as started
 	started bool
 	// used for first registration
@@ -399,6 +399,7 @@ func (s *rpcServer) Subscribe(sb Subscriber) error {
 		return fmt.Errorf("invalid subscriber: no handler functions")
 	}
 
+	// 检查合法性
 	if err := validateSubscriber(sb); err != nil {
 		return err
 	}
@@ -532,6 +533,7 @@ func (s *rpcServer) Register() error {
 	s.registered = true
 
 	for sb, _ := range s.subscribers {
+		// 装换为broker形式的handler, 并完成调用
 		handler := s.createSubHandler(sb, s.opts)
 		var opts []broker.SubscribeOption
 		if queue := sb.Options().Queue; len(queue) > 0 {
@@ -546,6 +548,7 @@ func (s *rpcServer) Register() error {
 			opts = append(opts, broker.DisableAutoAck())
 		}
 
+		// 准备开始监听
 		sub, err := config.Broker.Subscribe(sb.Topic(), handler, opts...)
 		if err != nil {
 			return err

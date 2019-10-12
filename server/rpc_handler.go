@@ -7,9 +7,13 @@ import (
 )
 
 type rpcHandler struct {
+	// 结构体名称
 	name      string
+	// newRpcHandler传进来的handler
 	handler   interface{}
+	// endpoints 通过反射的规则生成，具体参考说明
 	endpoints []*registry.Endpoint
+	// 传进来的选项
 	opts      HandlerOptions
 }
 

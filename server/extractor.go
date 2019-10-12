@@ -75,7 +75,8 @@ func extractEndpoint(method reflect.Method) *registry.Endpoint {
 	var stream bool
 	mt := method.Type
 
-	// 3个和4个参数？
+	// 3个参数时流式rpc
+	// 4个参数时普通rpc
 	switch mt.NumIn() {
 	case 3:
 		reqType = mt.In(1)
@@ -95,6 +96,8 @@ func extractEndpoint(method reflect.Method) *registry.Endpoint {
 
 	request := extractValue(reqType, 0)
 	response := extractValue(rspType, 0)
+
+	// 举例
 
 	return &registry.Endpoint{
 		Name:     method.Name,

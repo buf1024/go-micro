@@ -15,7 +15,7 @@ type Socket struct {
 	remote string
 	// local addr
 	local string
-	// send chan
+	// send chan 设计chan接受和发送信息
 	send chan *transport.Message
 	// recv chan
 	recv chan *transport.Message

@@ -19,6 +19,7 @@ type Server interface {
 	Options() Options
 	Init(...Option) error
 	Handle(Handler) error
+	// 创建请求处理接口
 	NewHandler(interface{}, ...HandlerOption) Handler
 	NewSubscriber(string, interface{}, ...SubscriberOption) Subscriber
 	Subscribe(Subscriber) error
@@ -34,6 +35,7 @@ type Router interface {
 }
 
 // Message is an async message interface
+// Broker的异步消息
 type Message interface {
 	Topic() string
 	Payload() interface{}
@@ -76,6 +78,7 @@ type Response interface {
 // A stream can be bidirectional which is indicated by the request.
 // The last error will be left in Error().
 // EOF indicates end of the stream.
+// Stream接口
 type Stream interface {
 	Context() context.Context
 	Request() Request

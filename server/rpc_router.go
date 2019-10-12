@@ -34,16 +34,16 @@ var (
 
 type methodType struct {
 	sync.Mutex  // protects counters
-	method      reflect.Method
-	ArgType     reflect.Type
-	ReplyType   reflect.Type
-	ContextType reflect.Type
-	stream      bool
+	method      reflect.Method // 方法
+	ArgType     reflect.Type // 请求类型
+	ReplyType   reflect.Type // 应答类型
+	ContextType reflect.Type // context类型
+	stream      bool // stream标志
 }
 
 type service struct {
 	name   string                 // name of service
-	rcvr   reflect.Value          // receiver of methods for the service
+	rcvr   reflect.Value          // receiver of methods for the service， receiver即是处理的handler
 	typ    reflect.Type           // type of the receiver
 	method map[string]*methodType // registered methods
 }
@@ -62,7 +62,7 @@ type response struct {
 type router struct {
 	name         string
 	mu           sync.Mutex // protects the serviceMap
-	serviceMap   map[string]*service
+	serviceMap   map[string]*service // 服务的service, service即封装的handler
 	reqLock      sync.Mutex // protects freeReq
 	freeReq      *request
 	respLock     sync.Mutex // protects freeResp
@@ -94,6 +94,7 @@ func isExportedOrBuiltinType(t reflect.Type) bool {
 
 // prepareMethod returns a methodType for the provided method or nil
 // in case if the method was unsuitable.
+// 检查函数的签名信息是否合法
 func prepareMethod(method reflect.Method) *methodType {
 	mtype := method.Type
 	mname := method.Name
@@ -105,6 +106,8 @@ func prepareMethod(method reflect.Method) *methodType {
 		return nil
 	}
 
+	// 3个参数时是stream
+	// 4个参数时非stream 代码冗余重复？
 	switch mtype.NumIn() {
 	case 3:
 		// assuming streaming

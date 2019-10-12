@@ -18,6 +18,7 @@ const (
 	subSig = "func(context.Context, interface{}) error"
 )
 
+// subscribe的处理函数
 type handler struct {
 	method  reflect.Value
 	reqType reflect.Type
@@ -25,13 +26,13 @@ type handler struct {
 }
 
 type subscriber struct {
-	topic      string
-	rcvr       reflect.Value
-	typ        reflect.Type
-	subscriber interface{}
-	handlers   []*handler
-	endpoints  []*registry.Endpoint
-	opts       SubscriberOptions
+	topic      string // topic
+	rcvr       reflect.Value // receiver的值
+	typ        reflect.Type  // receiver的类型
+	subscriber interface{} // 传过来的sub
+	handlers   []*handler // 解析后的handler
+	endpoints  []*registry.Endpoint // 处理后的endpoint
+	opts       SubscriberOptions // 选项
 }
 
 func newSubscriber(topic string, sub interface{}, opts ...SubscriberOption) Subscriber {
@@ -47,10 +48,12 @@ func newSubscriber(topic string, sub interface{}, opts ...SubscriberOption) Subs
 	var handlers []*handler
 
 	if typ := reflect.TypeOf(sub); typ.Kind() == reflect.Func {
+		// 函数的话
 		h := &handler{
 			method: reflect.ValueOf(sub),
 		}
 
+		// 接受两个参数或一个参数
 		switch typ.NumIn() {
 		case 1:
 			h.reqType = typ.In(0)
@@ -73,6 +76,7 @@ func newSubscriber(topic string, sub interface{}, opts ...SubscriberOption) Subs
 		hdlr := reflect.ValueOf(sub)
 		name := reflect.Indirect(hdlr).Type().Name()
 
+		// 结构体的话
 		for m := 0; m < typ.NumMethod(); m++ {
 			method := typ.Method(m)
 			h := &handler{

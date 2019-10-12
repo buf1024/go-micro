@@ -14,23 +14,23 @@ import (
 type Options struct {
 	Codecs       map[string]codec.NewCodec
 	Broker       broker.Broker
-	Registry     registry.Registry
-	Transport    transport.Transport
+	Registry     registry.Registry      // 注册中心
+	Transport    transport.Transport    // 传输层
 	Metadata     map[string]string
 	Name         string // server 名
 	Address      string // 监听地址
-	Advertise    string
-	Id           string
-	Version      string
+	Advertise    string // 对外公告地址，如果没有则用监听地址
+	Id           string // 默认ID
+	Version      string // 默认版本，当前时间
 	HdlrWrappers []HandlerWrapper
-	SubWrappers  []SubscriberWrapper
+	SubWrappers  []SubscriberWrapper // subscribe的wrapper,订阅通知过来时逐一通知
 
 	// RegisterCheck runs a check function before registering the service
 	RegisterCheck func(context.Context) error
 	// The register expiry time
-	RegisterTTL time.Duration
+	RegisterTTL time.Duration // 默认1m
 	// The interval on which to register
-	RegisterInterval time.Duration
+	RegisterInterval time.Duration // 默认30s
 
 	// The router for requests
 	Router Router
