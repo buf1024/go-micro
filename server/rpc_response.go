@@ -9,7 +9,7 @@ import (
 
 type rpcResponse struct {
 	header map[string]string
-	socket transport.Socket
+	socket transport.Socket // 伪socket
 	codec  codec.Codec
 }
 

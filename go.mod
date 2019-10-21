@@ -6,17 +6,21 @@ require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/beevik/ntp v0.2.0
 	github.com/bitly/go-simplejson v0.5.0
+	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/bwmarrin/discordgo v0.19.0
 	github.com/coreos/etcd v3.3.15+incompatible
 	github.com/forestgiant/sliceutil v0.0.0-20160425183142-94783f95db6c
 	github.com/fsnotify/fsnotify v1.4.7
 	github.com/fsouza/go-dockerclient v1.4.4
 	github.com/ghodss/yaml v1.0.0
+	github.com/go-acme/lego/v3 v3.1.0
 	github.com/go-log/log v0.1.0
 	github.com/golang/protobuf v1.3.2
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/handlers v1.4.2
 	github.com/gorilla/websocket v1.4.1
+	github.com/grpc-ecosystem/go-grpc-middleware v1.1.0 // indirect
+	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 // indirect
 	github.com/hashicorp/consul/api v1.2.0
 	github.com/hashicorp/hcl v1.0.0
 	github.com/imdario/mergo v0.3.7
@@ -27,15 +31,17 @@ require (
 	github.com/micro/go-micro v1.10.1-0.20190914150736-364c5a486180
 	github.com/micro/mdns v0.3.0
 	github.com/mitchellh/hashstructure v1.0.0
+	github.com/nats-io/nats-server/v2 v2.1.0 // indirect
 	github.com/nats-io/nats.go v1.8.1
 	github.com/nlopes/slack v0.6.0
 	github.com/pkg/errors v0.8.1
 	golang.org/x/crypto v0.0.0-20190911031432-227b76d455e7
-	golang.org/x/net v0.0.0-20190912160710-24e19bdeb0f2
+	golang.org/x/net v0.0.0-20190930134127-c5a3c61f89f3
 	google.golang.org/grpc v1.23.1
 	gopkg.in/go-playground/validator.v9 v9.29.1
 	gopkg.in/src-d/go-git.v4 v4.13.1
 	gopkg.in/telegram-bot-api.v4 v4.6.4
+	sigs.k8s.io/yaml v1.1.0 // indirect
 )
 
 replace github.com/micro/go-micro => ../go-micro

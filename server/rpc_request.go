@@ -6,16 +6,16 @@ import (
 )
 
 type rpcRequest struct {
-	service     string
-	method      string
-	endpoint    string
-	contentType string
-	socket      transport.Socket
+	service     string // Micro-Service
+	method      string // Micro-Method
+	endpoint    string // Micro-Endpoint
+	contentType string // Content-Type
+	socket      transport.Socket // 伪socket
 	codec       codec.Codec
-	header      map[string]string
-	body        []byte
+	header      map[string]string // transfer层的Header
+	body        []byte  // transfer层的Body
 	rawBody     interface{}
-	stream      bool
+	stream      bool // stream标识
 	first       bool
 }
 

@@ -24,11 +24,11 @@ import (
 )
 
 type rpcServer struct {
-	router *router
-	exit   chan chan error
+	router *router // 处理请求
+	exit   chan chan error // 退出chan
 
 	sync.RWMutex
-	opts        Options
+	opts        Options // 选项
 	handlers    map[string]Handler // handler列表
 	subscribers map[*subscriber][]broker.Subscriber // subscribe列表
 	// marks the serve as started
@@ -54,6 +54,7 @@ func newRpcServer(opts ...Option) Server {
 	}
 }
 
+// 处理请求的handler
 type rpcRouter struct {
 	h func(context.Context, Request, interface{}) error
 }

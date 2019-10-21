@@ -92,6 +92,41 @@ service := &registry.Service{
 	}
 ```
 
-`func (s *rpcServer) ServeConn(sock transport.Socket) `接受新的服务连接
+`func (s *rpcServer) ServeConn(sock transport.Socket) `接受新的服务连接。
+
+transfer层发送的协议:
+Micro-Stream
+Micro-Id   // 如果没有Micro-Stream则取Micro-Id
+Timeout // 超时
+Content-Type // "application/grpc":         
+                "application/grpc+json":    
+                "application/grpc+proto":   
+                "application/json":         
+                "application/json-rpc":     
+                "application/protobuf":     
+                "application/proto-rpc":    
+                "application/octet-stream": 
+                // 以下是旧的兼容的
+                "application/json":       
+                "application/json-rpc":   
+                "application/protobuf":   
+                "application/proto-rpc":  
+                "application/octet-stream"
+... 其他头部信息
+Micro-Service // 转换后前面增加X-
+Micro-Method
+Micro-Endpoint
+Micro-Protocol
+Micro-Target
+
+出错时发送：
+```go
+&transport.Message{
+					Header: map[string]string{
+						"Content-Type": "text/plain",
+					},
+					Body: []byte(err.Error())
+```
+
 
 

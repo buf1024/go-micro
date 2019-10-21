@@ -200,6 +200,7 @@ func (s *service) call(ctx context.Context, router *router, sending *sync.Mutex,
 
 	if !mtype.stream {
 		fn := func(ctx context.Context, req Request, rsp interface{}) error {
+			// 调用处理函数
 			returnValues = function.Call([]reflect.Value{s.rcvr, mtype.prepareContext(ctx), reflect.ValueOf(argv.Interface()), reflect.ValueOf(rsp)})
 
 			// The return value for the method is an error.
@@ -320,6 +321,7 @@ func (router *router) readRequest(r Request) (service *service, mtype *methodTyp
 		return
 	}
 	// is it a streaming request? then we don't read the body
+	// stream为何不readbody？
 	if mtype.stream {
 		cc.ReadBody(nil)
 		return
@@ -334,6 +336,7 @@ func (router *router) readRequest(r Request) (service *service, mtype *methodTyp
 		argIsValue = true
 	}
 	// argv guaranteed to be a pointer now.
+	// 直接读类型了
 	if err = cc.ReadBody(argv.Interface()); err != nil {
 		return
 	}

@@ -19,6 +19,7 @@ import (
 	"github.com/micro/go-micro/transport"
 	"github.com/micro/go-micro/tunnel"
 	tun "github.com/micro/go-micro/tunnel/transport"
+	"github.com/micro/go-micro/util/backoff"
 	"github.com/micro/go-micro/util/log"
 )
 
@@ -144,6 +145,18 @@ func newNetwork(opts ...Option) Network {
 	return network
 }
 
+func (n *network) Init(opts ...Option) error {
+	n.Lock()
+	defer n.Unlock()
+
+	// TODO: maybe only allow reinit of certain opts
+	for _, o := range opts {
+		o(&n.options)
+	}
+
+	return nil
+}
+
 // Options returns network options
 func (n *network) Options() Options {
 	n.RLock()
@@ -163,20 +176,23 @@ func (n *network) Name() string {
 func (n *network) resolveNodes() ([]string, error) {
 	// resolve the network address to network nodes
 	records, err := n.options.Resolver.Resolve(n.options.Name)
-	if err != nil {
-		return nil, err
-	}
 
 	nodeMap := make(map[string]bool)
 
 	// collect network node addresses
 	var nodes []string
+	var i int
 
-	i := 0
 	for _, record := range records {
-		nodes = append(nodes, record.Address)
+		if _, ok := nodeMap[record.Address]; ok {
+			continue
+		}
+
 		nodeMap[record.Address] = true
+		nodes = append(nodes, record.Address)
+
 		i++
+
 		// break once MaxConnection nodes has been reached
 		if i == MaxConnections {
 			break
@@ -191,6 +207,7 @@ func (n *network) resolveNodes() ([]string, error) {
 		// resolve anything that looks like a host name
 		records, err := dns.Resolve(node)
 		if err != nil {
+			log.Debugf("Failed to resolve %v %v", node, err)
 			continue
 		}
 
@@ -202,7 +219,7 @@ func (n *network) resolveNodes() ([]string, error) {
 		}
 	}
 
-	return nodes, nil
+	return nodes, err
 }
 
 // resolve continuously resolves network nodes and initializes network tunnel with resolved addresses
@@ -250,15 +267,26 @@ func (n *network) handleNetConn(sess tunnel.Session, msg chan *transport.Message
 
 // acceptNetConn accepts connections from NetworkChannel
 func (n *network) acceptNetConn(l tunnel.Listener, recv chan *transport.Message) {
+	var i int
 	for {
 		// accept a connection
 		conn, err := l.Accept()
 		if err != nil {
-			log.Debugf("Network tunnel [%s] accept error: %v", NetworkChannel, err)
+			sleep := backoff.Do(i)
+			log.Debugf("Network tunnel [%s] accept error: %v, backing off for %v", ControlChannel, err, sleep)
+			time.Sleep(sleep)
+			if i > 5 {
+				i = 0
+			}
+			i++
+			continue
 		}
 
 		select {
 		case <-n.closed:
+			if err := conn.Close(); err != nil {
+				log.Debugf("Network tunnel [%s] failed to close connection: %v", NetworkChannel, err)
+			}
 			return
 		default:
 			// go handle NetworkChannel connection
@@ -268,7 +296,7 @@ func (n *network) acceptNetConn(l tunnel.Listener, recv chan *transport.Message)
 }
 
 // processNetChan processes messages received on NetworkChannel
-func (n *network) processNetChan(client transport.Client, listener tunnel.Listener) {
+func (n *network) processNetChan(listener tunnel.Listener) {
 	// receive network message queue
 	recv := make(chan *transport.Message, 128)
 
@@ -329,7 +357,7 @@ func (n *network) processNetChan(client transport.Client, listener tunnel.Listen
 				if pbNetPeer.Node.Id == n.options.Id {
 					continue
 				}
-				log.Debugf("Network received peer message from: %s", pbNetPeer.Node.Id)
+				log.Debugf("Network received peer message from: %s %s", pbNetPeer.Node.Id, pbNetPeer.Node.Address)
 				peer := &node{
 					id:       pbNetPeer.Node.Id,
 					address:  pbNetPeer.Node.Address,
@@ -539,15 +567,27 @@ func (n *network) handleCtrlConn(sess tunnel.Session, msg chan *transport.Messag
 
 // acceptCtrlConn accepts connections from ControlChannel
 func (n *network) acceptCtrlConn(l tunnel.Listener, recv chan *transport.Message) {
+	var i int
 	for {
 		// accept a connection
 		conn, err := l.Accept()
 		if err != nil {
-			log.Debugf("Network tunnel [%s] accept error: %v", ControlChannel, err)
+			sleep := backoff.Do(i)
+			log.Debugf("Network tunnel [%s] accept error: %v, backing off for %v", ControlChannel, err, sleep)
+			time.Sleep(sleep)
+			if i > 5 {
+				// reset the counter
+				i = 0
+			}
+			i++
+			continue
 		}
 
 		select {
 		case <-n.closed:
+			if err := conn.Close(); err != nil {
+				log.Debugf("Network tunnel [%s] failed to close connection: %v", ControlChannel, err)
+			}
 			return
 		default:
 			// go handle ControlChannel connection
@@ -589,7 +629,7 @@ func (n *network) setRouteMetric(route *router.Route) {
 }
 
 // processCtrlChan processes messages received on ControlChannel
-func (n *network) processCtrlChan(client transport.Client, listener tunnel.Listener) {
+func (n *network) processCtrlChan(listener tunnel.Listener) {
 	// receive control message queue
 	recv := make(chan *transport.Message, 128)
 
@@ -699,7 +739,7 @@ func (n *network) processCtrlChan(client transport.Client, listener tunnel.Liste
 }
 
 // advertise advertises routes to the network
-func (n *network) advertise(client transport.Client, advertChan <-chan *router.Advert) {
+func (n *network) advertise(advertChan <-chan *router.Advert) {
 	hasher := fnv.New64()
 	for {
 		select {
@@ -753,14 +793,25 @@ func (n *network) advertise(client transport.Client, advertChan <-chan *router.A
 	}
 }
 
+func (n *network) sendConnect() {
+	// send connect message to NetworkChannel
+	// NOTE: in theory we could do this as soon as
+	// Dial to NetworkChannel succeeds, but instead
+	// we initialize all other node resources first
+	msg := &pbNet.Connect{
+		Node: &pbNet.Node{
+			Id:      n.node.id,
+			Address: n.node.address,
+		},
+	}
+	if err := n.sendMsg("connect", msg, NetworkChannel); err != nil {
+		log.Debugf("Network failed to send connect message: %s", err)
+	}
+}
+
 // Connect connects the network
 func (n *network) Connect() error {
 	n.Lock()
-	// return if already connected
-	if n.connected {
-		n.Unlock()
-		return nil
-	}
 
 	// try to resolve network nodes
 	nodes, err := n.resolveNodes()
@@ -779,6 +830,15 @@ func (n *network) Connect() error {
 		return err
 	}
 
+	// return if already connected
+	if n.connected {
+		// unlock first
+		n.Unlock()
+		// send the connect message
+		n.sendConnect()
+		return nil
+	}
+
 	// set our internal node address
 	// if advertise address is not set
 	if len(n.options.Advertise) == 0 {
@@ -786,7 +846,7 @@ func (n *network) Connect() error {
 	}
 
 	// dial into ControlChannel to send route adverts
-	ctrlClient, err := n.tunnel.Dial(ControlChannel, tunnel.DialMulticast())
+	ctrlClient, err := n.tunnel.Dial(ControlChannel, tunnel.DialMode(tunnel.Multicast))
 	if err != nil {
 		n.Unlock()
 		return err
@@ -795,14 +855,14 @@ func (n *network) Connect() error {
 	n.tunClient[ControlChannel] = ctrlClient
 
 	// listen on ControlChannel
-	ctrlListener, err := n.tunnel.Listen(ControlChannel)
+	ctrlListener, err := n.tunnel.Listen(ControlChannel, tunnel.ListenMode(tunnel.Multicast))
 	if err != nil {
 		n.Unlock()
 		return err
 	}
 
 	// dial into NetworkChannel to send network messages
-	netClient, err := n.tunnel.Dial(NetworkChannel, tunnel.DialMulticast())
+	netClient, err := n.tunnel.Dial(NetworkChannel, tunnel.DialMode(tunnel.Multicast))
 	if err != nil {
 		n.Unlock()
 		return err
@@ -811,7 +871,7 @@ func (n *network) Connect() error {
 	n.tunClient[NetworkChannel] = netClient
 
 	// listen on NetworkChannel
-	netListener, err := n.tunnel.Listen(NetworkChannel)
+	netListener, err := n.tunnel.Listen(NetworkChannel, tunnel.ListenMode(tunnel.Multicast))
 	if err != nil {
 		n.Unlock()
 		return err
@@ -840,19 +900,8 @@ func (n *network) Connect() error {
 	}
 	n.Unlock()
 
-	// send connect message to NetworkChannel
-	// NOTE: in theory we could do this as soon as
-	// Dial to NetworkChannel succeeds, but instead
-	// we initialize all other node resources first
-	msg := &pbNet.Connect{
-		Node: &pbNet.Node{
-			Id:      n.node.id,
-			Address: n.node.address,
-		},
-	}
-	if err := n.sendMsg("connect", msg, NetworkChannel); err != nil {
-		log.Debugf("Network failed to send connect message: %s", err)
-	}
+	// send the connect message
+	n.sendConnect()
 
 	// go resolving network nodes
 	go n.resolve()
@@ -861,11 +910,11 @@ func (n *network) Connect() error {
 	// prune stale nodes
 	go n.prune()
 	// listen to network messages
-	go n.processNetChan(netClient, netListener)
+	go n.processNetChan(netListener)
 	// advertise service routes
-	go n.advertise(ctrlClient, advertChan)
+	go n.advertise(advertChan)
 	// accept and process routes
-	go n.processCtrlChan(ctrlClient, ctrlListener)
+	go n.processCtrlChan(ctrlListener)
 
 	n.Lock()
 	n.connected = true

@@ -50,6 +50,7 @@ type Marshaler interface {
 // Message represents detailed information about
 // the communication, likely followed by the body.
 // In the case of an error, body may be nil.
+// Server层的Message？
 type Message struct {
 	Id       string
 	Type     MessageType
