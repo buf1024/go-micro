@@ -7,6 +7,7 @@ require (
 	github.com/beevik/ntp v0.2.0
 	github.com/bitly/go-simplejson v0.5.0
 	github.com/bwmarrin/discordgo v0.19.0
+	github.com/cloudflare/cloudflare-go v0.10.2
 	github.com/coreos/etcd v3.3.15+incompatible
 	github.com/forestgiant/sliceutil v0.0.0-20160425183142-94783f95db6c
 	github.com/fsnotify/fsnotify v1.4.7
@@ -24,6 +25,7 @@ require (
 	github.com/joncalhoun/qson v0.0.0-20170526102502-8a9cab3a62b1
 	github.com/json-iterator/go v1.1.7
 	github.com/lucas-clemente/quic-go v0.12.0
+	github.com/mholt/certmagic v0.8.0
 	github.com/micro/cli v0.2.0
 	github.com/micro/go-micro v1.10.1-0.20190914150736-364c5a486180
 	github.com/micro/mdns v0.3.0
